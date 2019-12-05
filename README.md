@@ -102,7 +102,7 @@ A diferença no desempenho de certos códigos executados em CPU ou GPU é dada p
 
 Código em CPU
 
-```py
+```python
 import numpy as np
 import time
 
@@ -141,6 +141,15 @@ A GPU também é de fundamental uso em outras aplicações como a rederização 
 
 Caso esteja utilizando uma câmera USB, pule esta etapa.
 (completar)
+
+## Testando a Câmera
+
+Após conectada, teste a câmera para checar se ela realmente está funcional com a linha de código no terminal.
+
+```bash
+$ gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM),width=3820, height=2464, framerate=21/1, format=NV12' ! nvvidconv flip-method=0 ! 'video/x-raw,width=960, height=616' ! nvvidconv ! nvegltransform ! nveglglessink -e
+```
+
 
 ## Exemplo e comparação OpenCV vs OpenCV CUDA
 Descobri que os frames por segundo da renderização de vídeo (cv2.videoCapture(0)) é definida por um parâmetro e não por estar em GPU ou CPU, o que literalmente quebrou o propósito da minha ideia de projeto inicial.
