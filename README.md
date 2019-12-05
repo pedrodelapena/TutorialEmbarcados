@@ -29,8 +29,8 @@ Após realizar o download da imagem, conecte o SD card em um adaptador e então 
 
 Caso você prefira realizar o processo de forma mais *raiz*, você também o pode fazer pela linha de comando. Para isto, descubra o nome e localização do seu flash drive com `dmesg | tail`. Após encontrar o drive, extraia o arquivo para o SD card com o comando:
 
-```
-$ bash /usr/bin/unzip -p ~/[LOCAL_DE_DOWNLOAD]/jetson_nano_devkit_sd_card.zip 
+```bash
+$ /usr/bin/unzip -p ~/[LOCAL_DE_DOWNLOAD]/jetson_nano_devkit_sd_card.zip 
 $ sudo /bin/dd of=/dev/sd[NOME_DO_DRIVE] bs=1M status=progress
 ```
 Após finalizado o processo, remova o drive de seu computador.
