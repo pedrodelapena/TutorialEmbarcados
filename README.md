@@ -2,7 +2,6 @@
 ## Pedro de la Peña, Embarcados Avançados, Insper 2019/2
 
 Neste projeto iremos utilizar uma placa Jetson Nano para comparar a diferença no desempenho de um código sendo executado em CPU VS GPU.
-https://towardsdatascience.com/python-performance-and-gpus-1be860ffd58d
 
 ## Pré Requisitos
 
@@ -142,5 +141,6 @@ A GPU também é de fundamental uso em outras aplicações como a rederização 
 Caso esteja utilizando uma câmera USB, pule esta etapa.
 (completar)
 
-# Exemplo e comparação OpenCV vs OpenCV CUDA
+## Exemplo e comparação OpenCV vs OpenCV CUDA
+Descobri que os frames por segundo da renderização de vídeo (cv2.videoCapture(0)) é definida por um parâmetro e não por estar em GPU ou CPU, o que literalmente quebrou o propósito da minha ideia de projeto inicial.
 
