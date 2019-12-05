@@ -43,7 +43,7 @@ A entrada do cartão de memória não é muito visível para aqueles que estão 
 
 ## Primeiro boot
 
-Com o cartão de memória já inserido, é preciso conectar os cabos na placa. Não há "botão de ligar ou desligar" na placa, e o boot começa automaticamente quando ambos cabos de energia (supply de 5V (USB) e fonte) estiverem conectados. Além disso, lembre-se que <u>será preciso conexão com a internet para os próximos passos</u>.
+Com o cartão de memória já inserido, é preciso conectar os cabos na placa. Não há "botão de ligar ou desligar" na placa, e o boot começa automaticamente quando o cabo de alimentação (supply de 5V (USB) OU fonte) estiver conectado. Além disso, lembre-se que <u>será preciso conexão com a internet para os próximos passos</u>.
 
 Após inserir as configurações de formato de teclado, região e informações 'pessoais' do ambiente Linux, a placa reiniciará e então estará pronta para uso.
 
@@ -64,8 +64,21 @@ $ wget https://bootstrap.pypa.io/get-pip.py
 $ sudo python3 get-pip.py
 ```
 
+## Configurando o ambiente CUDA
+
+```
+$ wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda_10.2.89_440.33.01_linux.run
+$ sudo sh cuda_10.2.89_440.33.01_linux.run
+```
+
 ## Configurando o Ambiente OpenCV
-Esse aqui demora... E MUITO! (~4 horas)
+Esse aqui demora... E MUITO! (~4 horas) <br>
+
+**IMPORTANTE!**  Conecte um cooler à placa e faça questão de utilizar a fonte de alimentação normal em relação à USB para este processo, já que ele demanda MUITA potência e a placa atinger altas temperaturas, o que pode levar ao seu superaquecimento.
+
+![Cooler](doc/cooler.jpg)
+
+Com o cooler instalado, rode as seguintes linhas de comando para instalar e compilar o OpenCV. E lembrando, é uma looooooonga espera.
 
 ```
 $ wget https://github.com/AastaNV/JEP/blob/master/script/install_opencv4.1.1_Jetson.sh
@@ -73,12 +86,16 @@ $ sudo sh install_opencv4.1.1_Jetson.sh
 $ export PYTHONPATH=/usr/local/python
 ```
 
-## Configurando o ambiente CUDA
+Após realizada a build, abra um terminal python3 e rode o seguinte código para testar o OpenCV:
 
+```python
+import cv2
+print(cv2.getBuildInformation())
 ```
-$ wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda_10.2.89_440.33.01_linux.run
-$ sudo sh cuda_10.2.89_440.33.01_linux.run
-```
+
+A partir deste comando, é possivel visualizar se o CUDA OpenCV está configurado, no campo `NVIDIA CUDA`
+
+![Cooler](doc/cuda.png)
 
 ## Instalação Pytorch
 
@@ -133,24 +150,92 @@ print(z)
 print("\nElapsed time GPU:",end-start,"seconds")
 ```
 
-A GPU também é de fundamental uso em outras aplicações como a rederização de vídeos e imagens e também no treinamento de modelos de Machine Learning e redes neurais.
+# CUDA OpenCV
 
-# O que falta no tutorial...
+A GPU também é de fundamental uso em outras aplicações como a rederização de vídeos e imagens e também no treinamento de modelos de Machine Learning e redes neurais. Desta forma,a biblioteca OpenCV pode ser utilizada para realizar tais tarefas na GPU. 
 
 ## Instalação da Câmera
 
 Caso esteja utilizando uma câmera USB, pule esta etapa.
-(completar)
 
-## Testando a Câmera
+Com a Jetson Nano <u>desligada de todas as fontes de energia</u> e com a câmera Raspberry Pi 2.1 (1.3 não funciona), levante a trava localzada em um dos cantos da placa, forçando-a para cima.
 
-Após conectada, teste a câmera para checar se ela realmente está funcional com a linha de código no terminal.
+![Camera](doc/camera.png)
+
+Em seguida, insira o conector da câmera (com "a parte azul voltada para fora") e então pressione a trava novamente para baixo.
+
+## Testando a Câmera Raspberry Pi
+
+Após conectada, teste a câmera para checar se ela realmente está funcional com a seguinte linha de código no terminal.
 
 ```bash
 $ gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM),width=3820, height=2464, framerate=21/1, format=NV12' ! nvvidconv flip-method=0 ! 'video/x-raw,width=960, height=616' ! nvvidconv ! nvegltransform ! nveglglessink -e
 ```
 
-
 ## Exemplo e comparação OpenCV vs OpenCV CUDA
-Descobri que os frames por segundo da renderização de vídeo (cv2.videoCapture(0)) é definida por um parâmetro e não por estar em GPU ou CPU, o que literalmente quebrou o propósito da minha ideia de projeto inicial.
 
+
+O código à seguir foi adaptado do Jetson Nano Hacks, sendo que o original pode ser encontrado [neste link](https://github.com/JetsonHacksNano/CSI-Camera/blob/master/simple_camera.py). Neste código é testada a diferença de desempenho da CPU em relação à GPU.
+
+```python
+import cv2
+import time
+
+def gstreamer_pipeline(
+    capture_width=640,
+    capture_height=360,
+    display_width=640,
+    display_height=360,
+    framerate=60,
+    flip_method=0,
+):
+    return (
+        "nvarguscamerasrc ! "
+        "video/x-raw(memory:NVMM), "
+        "width=(int)%d, height=(int)%d, "
+        "format=(string)NV12, framerate=(fraction)%d/1 ! "
+        "nvvidconv flip-method=%d ! "
+        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=(string)BGR ! appsink"
+        % (
+            capture_width,
+            capture_height,
+            framerate,
+            flip_method,
+            display_width,
+            display_height,
+        )
+    )
+
+
+def show_camera():
+    # To flip the image, modify the flip_method parameter (0 and 2 are the most common)
+    print(gstreamer_pipeline(flip_method=0))
+    cap = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
+    if cap.isOpened():
+        window_handle = cv2.namedWindow("CSI Camera", cv2.WINDOW_AUTOSIZE)
+        # Window
+        while cv2.getWindowProperty("CSI Camera", 0) >= 0:
+            ret_val, img = cap.read(); 
+            start = time.time()
+            #Alterar aqui para "c2.cuda.flip()" ou "cv2.flip()"
+            img2 = cv2.cuda.flip(img, 1)
+            end = time.time()
+            print("Elapsed time",end-start)
+            cv2.imshow("CSI Camera", img2)
+            keyCode = cv2.waitKey(30) & 0xFF
+            # Stop the program on the ESC key
+            if keyCode == 27:
+                break
+        cap.release()
+        cv2.destroyAllWindows()
+    else:
+        print("Unable to open camera")
+
+
+if __name__ == "__main__":
+    show_camera()
+```
+
+Neste caso, devido ao fato de ser uma simples alteração na imagem como um *flip*, o programa demora mais para enviar a imagem para a GPU que realizar todo o processo na CPU. Contudo, com mais processos e operações, o ganho de desempenho da GPU fica evidente. Além disso, para descobrir todas as funções do módulo CUDA, abra um terminal Python3 e insira a linha `dir(cv2.cuda)`. 
