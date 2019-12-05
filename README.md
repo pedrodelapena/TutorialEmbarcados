@@ -102,7 +102,7 @@ A diferença no desempenho de certos códigos executados em CPU ou GPU é dada p
 
 Código em CPU
 
-```
+```py
 import numpy as np
 import time
 
@@ -118,7 +118,8 @@ print("\nElapsed time CPU:",end-start,"seconds")
 
 
 Código em GPU
-```
+
+``` python
 import torch
 import time
 
